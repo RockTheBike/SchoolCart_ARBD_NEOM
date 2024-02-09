@@ -1,5 +1,6 @@
 #include <Adafruit_NeoMatrix.h>
 #include <Adafruit_NeoPixel.h>
+#include <SoftwareSerial.h>     // for listening to the inverter talking
 
 #define VOLT_PIN        A0
 #define AMPS_IN_PIN     A3      // labeled PLUSRAIL/PLUSOUT IC2
@@ -7,6 +8,9 @@
 #define MATRIX01_PIN    11
 #define MATRIX02_PIN    12
 #define STRIP01_PIN     13
+#define INV_SERIAL_PIN  10      // from eco-worthy 3000W hockey puck meter serial wire
+
+SoftwareSerial inverter_serial(INV_SERIAL_PIN, -1, false); // software serial port, listen-only, false=correct polarity
 
 #define VOLTCOEFF       13.36   // convert ADC value to voltage
 #define AMPS_IN_COEFF   13.05   // PLUSOUT = OUTPUT, PLUSRAIL = PEDAL INPUT
@@ -40,6 +44,7 @@ uint16_t FAvgReads = 50;
 
 void setup() {
   Serial.begin(115200);
+  inverter_serial.begin(115200);
   matrix01.begin();
   matrix01.setTextWrap(false);
   matrix01.setBrightness(BRIGHTNESS);
@@ -61,6 +66,16 @@ void loop() {
   disNeostring01(intAlignRigiht(V_Avg), LED_WHITE_HIGH);
   disNeostring02(intAlignRigiht(I_Avg), LED_WHITE_HIGH);
   disNeowipe(Wheel(80), P_Avg);
+  // printReport();
+  int c = inverter_serial.read();
+  if (c != -1) {
+    Serial.print(" ");
+    if (c < 16) Serial.print("0"); // leading zero
+    Serial.print(c,HEX);
+  }
+}
+
+void printReport() {
   Serial.print(" V_Avg : ");
   Serial.print(V_Avg);
   Serial.print(" I_Avg : ");
