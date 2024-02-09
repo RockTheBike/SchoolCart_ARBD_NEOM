@@ -11,6 +11,9 @@
 #define INV_SERIAL_PIN  10      // from eco-worthy 3000W hockey puck meter serial wire
 
 SoftwareSerial inverter_serial(INV_SERIAL_PIN, -1, false); // software serial port, listen-only, false=correct polarity
+uint16_t inverter_centivolts = 0;
+uint16_t inverter_deciamps = 0;
+uint16_t inverter_centiwatts = 0;
 
 #define VOLTCOEFF       13.36   // convert ADC value to voltage
 #define AMPS_IN_COEFF   13.05   // PLUSOUT = OUTPUT, PLUSRAIL = PEDAL INPUT
@@ -44,6 +47,7 @@ uint16_t FAvgReads = 50;
 
 void setup() {
   Serial.begin(115200);
+  Serial.println("SchoolCart_ARBD_NEOM_20240112a.ino");
   inverter_serial.begin(115200);
   matrix01.begin();
   matrix01.setTextWrap(false);
@@ -67,15 +71,51 @@ void loop() {
   disNeostring02(intAlignRigiht(I_Avg), LED_WHITE_HIGH);
   disNeowipe(Wheel(80), P_Avg);
   // printReport();
-  int c = inverter_serial.read();
-  if (c != -1) {
-    Serial.print(" ");
-    if (c < 16) Serial.print("0"); // leading zero
-    Serial.print(c,HEX);
+  if (inverter_serial.available()) {
+    int c = inverter_serial.read();
+    if (c == 0x03) {
+      while (inverter_serial.available()==0);
+      int cc = inverter_serial.read();
+      if (cc == 0x04) {
+        while (inverter_serial.available()==0);
+        int ccc = inverter_serial.read();
+        if (ccc == 0x10) {
+          while (inverter_serial.available()==0);
+          inverter_centivolts = inverter_serial.read() << 8;
+          while (inverter_serial.available()==0);
+          inverter_centivolts += inverter_serial.read();
+          for (uint8_t s=0; s<8; s++) { // swallow 8 bytes
+            while (inverter_serial.available()==0);
+            printHexChar(inverter_serial.read()); // print unwanted bytes why not 00 00 00 00 00 00 2E 1D
+          }
+          while (inverter_serial.available()==0);
+          inverter_deciamps = inverter_serial.read() << 8;
+          while (inverter_serial.available()==0);
+          inverter_deciamps += inverter_serial.read();
+          while (inverter_serial.available()==0);
+          inverter_centiwatts = inverter_serial.read() << 8;
+          while (inverter_serial.available()==0);
+          inverter_centiwatts += inverter_serial.read();
+          printReport(); // give us an output line V_Inv : 26.15 I_Inv : 0.00 P_Inv : 0.00
+        }                // with heater on:        V_Inv : 22.70 I_Inv : 33.80 P_Inv : 399.00
+      }
+    }
   }
 }
 
+void printHexChar(char c) {
+  Serial.print(" ");
+  if (c < 16) Serial.print("0"); // leading zero
+  Serial.print(c,HEX);
+}
+
 void printReport() {
+  Serial.print(" V_Inv : ");
+  Serial.print(inverter_centivolts / 100.0);
+  Serial.print(" I_Inv : ");
+  Serial.print(inverter_deciamps / 10.0);
+  Serial.print(" P_Inv : ");
+  Serial.print(inverter_centiwatts / 100.0);
   Serial.print(" V_Avg : ");
   Serial.print(V_Avg);
   Serial.print(" I_Avg : ");
