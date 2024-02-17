@@ -8,9 +8,10 @@
 #define MATRIX01_PIN    11
 #define MATRIX02_PIN    12
 #define STRIP01_PIN     13
-#define INV_SERIAL_PIN  10      // from eco-worthy 3000W hockey puck meter serial wire
+//#define INV_SERIAL_PIN  10      // from eco-worthy 3000W hockey puck meter serial wire
 
-SoftwareSerial inverter_serial(INV_SERIAL_PIN, -1, false); // software serial port, listen-only, false=correct polarity
+// SoftwareSerial inverter_serial(INV_SERIAL_PIN, -1, false); // software serial port, listen-only, false=correct polarity
+#define inverter_serial Serial // we are using the built-in serial instead of SoftwareSerial
 uint16_t inverter_centivolts = 0;
 uint16_t inverter_deciamps = 0;
 uint16_t inverter_centiwatts = 0;
@@ -48,7 +49,7 @@ uint16_t FAvgReads = 50;
 void setup() {
   Serial.begin(115200);
   Serial.println("SchoolCart_ARBD_NEOM_20240112a.ino");
-  inverter_serial.begin(115200);
+  // inverter_serial.begin(115200);
   matrix01.begin();
   matrix01.setTextWrap(false);
   matrix01.setBrightness(BRIGHTNESS);
@@ -71,11 +72,11 @@ void loop() {
   disNeostring02(intAlignRigiht(I_Avg), LED_WHITE_HIGH);
   disNeowipe(Wheel(80), P_Avg);
   int cis = checkInverterSerial();
-  if (cis != 0) {
-    Serial.print(cis);
-  } else {
+  if (cis == 9) {
     Serial.println();
     printReport();
+  } else if (cis > 3) {
+    Serial.print(cis);
   }
 }
 
@@ -106,11 +107,11 @@ int checkInverterSerial() {
           inverter_centiwatts = inverter_serial.read() << 8;
           while (inverter_serial.available()==0);
           inverter_centiwatts += inverter_serial.read();
-          return 0;
-        } else return 4; // with no load:     V_Inv : 26.15 I_Inv : 0.00 P_Inv : 0.00
-      } else return 3;   // with heater on:   V_Inv : 22.70 I_Inv : 33.80 P_Inv : 399.00
-    } else return 2;
-  } else return 1;
+          return 9;
+        } else return 3; // with no load:     V_Inv : 26.15 I_Inv : 0.00 P_Inv : 0.00
+      } else return 2;   // with heater on:   V_Inv : 22.70 I_Inv : 33.80 P_Inv : 399.00
+    } else return 1;
+  } else return 0;
 }
 
 void printHexChar(char c) {
