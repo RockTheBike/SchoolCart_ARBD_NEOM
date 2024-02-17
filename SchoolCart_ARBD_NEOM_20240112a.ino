@@ -21,7 +21,7 @@ uint16_t inverter_centiwatts = 0;
 #define AMPS_OUT_COEFF  13.05   // PLUSOUT = OUTPUT, PLUSRAIL = PEDAL INPUT
 #define AMPS_OUT_OFFSET 118.0   // when current sensor is at 0 amps this is the ADC value
 
-#define BRIGHTNESS      32
+#define BRIGHTNESS      20
 #define mh              8       // matrix height
 #define mw              20      // matrix width
 #define STRIP_COUNT     60      // how many LEDs
@@ -70,23 +70,33 @@ void loop() {
   disNeostring01(intAlignRigiht(V_Avg), LED_WHITE_HIGH);
   disNeostring02(intAlignRigiht(I_Avg), LED_WHITE_HIGH);
   disNeowipe(Wheel(80), P_Avg);
-  // printReport();
+  int cis = checkInverterSerial();
+  if (cis != 0) {
+    Serial.print(cis);
+  } else {
+    Serial.println();
+    printReport();
+  }
+}
+
+int checkInverterSerial() {
   if (inverter_serial.available()) {
     int c = inverter_serial.read();
     if (c == 0x03) {
       while (inverter_serial.available()==0);
-      int cc = inverter_serial.read();
-      if (cc == 0x04) {
+      c = inverter_serial.read();
+      if (c == 0x04) {
         while (inverter_serial.available()==0);
-        int ccc = inverter_serial.read();
-        if (ccc == 0x10) {
+        c = inverter_serial.read();
+        if (c == 0x10) {
           while (inverter_serial.available()==0);
           inverter_centivolts = inverter_serial.read() << 8;
           while (inverter_serial.available()==0);
           inverter_centivolts += inverter_serial.read();
           for (uint8_t s=0; s<8; s++) { // swallow 8 bytes
             while (inverter_serial.available()==0);
-            printHexChar(inverter_serial.read()); // print unwanted bytes why not 00 00 00 00 00 00 2E 1D
+            c = inverter_serial.read();
+            //printHexChar(c); // print unwanted bytes why not 00 00 00 00 00 00 2E 1D
           }
           while (inverter_serial.available()==0);
           inverter_deciamps = inverter_serial.read() << 8;
@@ -96,11 +106,11 @@ void loop() {
           inverter_centiwatts = inverter_serial.read() << 8;
           while (inverter_serial.available()==0);
           inverter_centiwatts += inverter_serial.read();
-          printReport(); // give us an output line V_Inv : 26.15 I_Inv : 0.00 P_Inv : 0.00
-        }                // with heater on:        V_Inv : 22.70 I_Inv : 33.80 P_Inv : 399.00
-      }
-    }
-  }
+          return 0;
+        } else return 4; // with no load:     V_Inv : 26.15 I_Inv : 0.00 P_Inv : 0.00
+      } else return 3;   // with heater on:   V_Inv : 22.70 I_Inv : 33.80 P_Inv : 399.00
+    } else return 2;
+  } else return 1;
 }
 
 void printHexChar(char c) {
@@ -169,6 +179,7 @@ void disNeowipe(uint32_t color, int pixlevel) {
     //strip.show();                          //  Update strip to match
     //delay(wait);                           //  Pause for a moment
   }
+  strip01.setPixelColor(STRIP_COUNT - 1, color); // DEBUG to see final line
   strip01.show();
 }
 
