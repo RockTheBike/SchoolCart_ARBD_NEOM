@@ -20,19 +20,19 @@
 
 #define VOLTCOEFF       13.13   // convert ADC value to voltage
 #define AMPS_IN_COEFF   11.94   // PLUSOUT = OUTPUT, PLUSRAIL = PEDAL INPUT
-float amps_in_offset = 124.5;   // when current sensor is at 0 amps this is the ADC value
+#define AMPS_IN_OFFSET 124.5   // when current sensor is at 0 amps this is the ADC value
 #define AMPS_OUT_COEFF  11.97   // PLUSOUT = OUTPUT, PLUSRAIL = PEDAL INPUT
-float amps_out_offset = 122.0;   // when current sensor is at 0 amps this is the ADC value
+#define AMPS_OUT_OFFSET 122.0   // when current sensor is at 0 amps this is the ADC value
 #define INVERTER_AMPS1_COEFF   12.30   // one of two current sensors for inverter
-float inverter_amps1_offset = 119.5;
+#define INVERTER_AMPS1_OFFSET 119.5
 #define INVERTER_AMPS2_COEFF   12.63  // two of two current sensors for inverter
-float inverter_amps2_offset = 120.5;
+#define INVERTER_AMPS2_OFFSET 120.5
 
 #define INTERVAL_PRINT  1000    // time between printInfo() events
 #define INTERVAL_NEOPIXELS 100  // time between neopixel update events WHICH CORRUPTS millis()
 #define BRIGHTNESS      20
 #define MATRIX_HEIGHT   8       // matrix height
-#define MATRIX_WIDTH    36      // matrix width THIS ONLY WORKS WITH v1.2.2 OF ADAFRUIT GFX LIBRARY
+#define MATRIX_WIDTH    18      // matrix width
 #define STRIP_COUNT     60      // how many LEDs
 #define WATTHOURS_EEPROM_ADDRESS 20
 
@@ -48,13 +48,9 @@ Adafruit_NeoPixel pedalometer(STRIP_COUNT, PEDALOMETER_PIN, NEO_GRB + NEO_KHZ800
 uint32_t lastPrintInfo = 0;  // last time printInfo() happened
 uint32_t lastNeopixels = 0;  // last time NeoPixels updated
 uint32_t lastGetAnalogs = 0;  // last time getAnalogs() happened
-uint32_t inverter_amps1 = 0; // accumulator for inverter current sensor 1
-uint32_t inverter_amps2 = 0; // accumulator for inverter current sensor 2
 float voltage = 0;              // system DC voltage
 float current_pedal = 0;        // pedal input current
 float current_inverter = 0;     // inverter output DC current
-float watts_pedal = 0;
-float watts_inverter = 0;
 uint32_t energy_pedal = 0;         // energy accumulators ALL IN MILLIJOULES
 uint32_t energy_inverter = 0;      // energy accumulators
 int32_t energy_balance;           // energy banking account value, loaded from EEPROM
@@ -135,7 +131,7 @@ void energyBankingModeLoop() {
       if (! digitalRead(BUTTONLEFT)) attemptShutdown(); // if button is still being held down, try to shut down
     } else if (! digitalRead(BUTTONRIGHT)) {
       disNeostring(&matrix,"RIGHrigh", LED_WHITE_HIGH);
-    } else { //Show watts_pedal and energy_pedal on main signs.
+    } else { //Show watts_pedal() and energy_pedal on main signs.
       disNeostring(&matrix,intAlignRigiht(watts_pedal)+intAlignRigiht(energy_pedal), LED_WHITE_HIGH);
     }
     if (energy_balance > 600000) { //If we have just begun a new session, and energy_balance is <600, don't turn on inverter yet
@@ -146,18 +142,18 @@ void energyBankingModeLoop() {
     //uint32_t energy_balance = (millis()*250000UL) % 3690000000UL; // TODO: this is for testing only
     //uint32_t energy_balance = 3600000000UL/2; // TODO: this is for testing only
     int trend = millis() % 9000 / 3000 - 1; // TODO: this is for testing only
-    if (watts_pedal >  (watts_inverter + 25))   trend = 1; // determine animation pattern on pedalometer
-    if (watts_pedal <= (watts_inverter + 25))   trend = 0;
-    if (watts_pedal < watts_inverter)           trend = -1;
+    if (watts_pedal() >  (watts_inverter() + 25))   trend = 1; // determine animation pattern on pedalometer
+    if (watts_pedal() <= (watts_inverter() + 25))   trend = 0;
+    if (watts_pedal() < watts_inverter())           trend = -1;
     energyBankPedalometer(energy_balance/(    3600000000UL/59UL), trend); // 59 is max pedalometer, 60*60*1000000 is 1kwh
   }
 }
 
 void energyBankPedalometer(int pixlevel, int trend){
   //Display energyBankBalance as a % of the available pixels, in green.
-  //If watts_pedal > watts_inverter then the pedalers are putting in more than
+  //If watts_pedal() > watts_inverter then the pedalers are putting in more than
   //the inverter. Show them things are heading higher. Do this by making the
-  //next 3 pixels up chase up on a 0.2s interval .  Else if watts_pedal <
+  //next 3 pixels up chase up on a 0.2s interval .  Else if watts_pedal() <
   //watts_inverter, the pedalers aren't keeping up. Show them things are
   //heading lower.  Make the 3 pixels down chase down in red.
   //If watt_pedals = watt_inverter, students are keeping up with the inverter.
@@ -241,30 +237,36 @@ void getAnalogs() {
   voltage = average(analogRead(VOLT_PIN) / VOLTCOEFF, voltage);
 
   int amps_in_pin_reading = analogRead(AMPS_IN_PIN);
-  current_pedal = average(( amps_in_pin_reading - amps_in_offset ) / AMPS_IN_COEFF , current_pedal);
-  if (amps_in_pin_reading - amps_in_offset < 6) current_pedal = 0;
+  current_pedal = average(( amps_in_pin_reading - AMPS_IN_OFFSET ) / AMPS_IN_COEFF , current_pedal);
+  if (amps_in_pin_reading - AMPS_IN_OFFSET < 6) current_pedal = 0;
   if (current_pedal < 0) current_pedal = 0;
-  watts_pedal = voltage * current_pedal;
 
   int inverter_amps1_pin_reading = analogRead(INVERTER_AMPS1_PIN);
-  float inverter_amps1_calc = ( inverter_amps1_pin_reading - inverter_amps1_offset ) / INVERTER_AMPS1_COEFF;
-  if (inverter_amps1_pin_reading - inverter_amps1_offset < 6) inverter_amps1_calc = 0;
+  float inverter_amps1_calc = ( inverter_amps1_pin_reading - INVERTER_AMPS1_OFFSET ) / INVERTER_AMPS1_COEFF;
+  if (inverter_amps1_pin_reading - INVERTER_AMPS1_OFFSET < 6) inverter_amps1_calc = 0;
   if (inverter_amps1_calc < 0)     inverter_amps1_calc = 0;
 
   int inverter_amps2_pin_reading = analogRead(INVERTER_AMPS2_PIN);
-  float inverter_amps2_calc = ( inverter_amps2_pin_reading - inverter_amps2_offset ) / INVERTER_AMPS2_COEFF;
-  if (inverter_amps2_pin_reading - inverter_amps2_offset < 6) inverter_amps2_calc = 0;
+  float inverter_amps2_calc = ( inverter_amps2_pin_reading - INVERTER_AMPS2_OFFSET ) / INVERTER_AMPS2_COEFF;
+  if (inverter_amps2_pin_reading - INVERTER_AMPS2_OFFSET < 6) inverter_amps2_calc = 0;
   if (inverter_amps2_calc < 0)     inverter_amps2_calc = 0;
 
   current_inverter = average(inverter_amps1_calc + inverter_amps2_calc, current_inverter);
-  watts_inverter = voltage * current_inverter;
 
-  energy_pedal    += watts_pedal    * integrationTime;
-  energy_inverter += watts_inverter * integrationTime;
+  energy_pedal    += watts_pedal()    * integrationTime;
+  energy_inverter += watts_inverter() * integrationTime;
 
-  energy_balance  += watts_pedal    * integrationTime; // adjust energy_balance
-  energy_balance  -= watts_inverter * integrationTime; // adjust energy_balance
+  energy_balance  += watts_pedal()    * integrationTime; // adjust energy_balance
+  energy_balance  -= watts_inverter() * integrationTime; // adjust energy_balance
   if (energy_balance < 0) energy_balance = 0; // don't let it go negative, we don't do that
+}
+
+float watts_pedal() {
+  return voltage * current_pedal;
+}
+
+float watts_inverter() {
+  return voltage * current_inverter;
 }
 
 float average(float val, float avg){
