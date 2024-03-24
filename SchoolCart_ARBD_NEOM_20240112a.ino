@@ -9,7 +9,8 @@
 #define AMPS_OUT_PIN    A2      // labeled MINUSRAIL/MINUSOUT IC3
 #define INVERTER_AMPS1_PIN     A4      // one of two current sensors for inverter
 #define INVERTER_AMPS2_PIN     A5      // two of two current sensors for inverter
-#define MATRIX_PIN      11
+#define MATRIX01_PIN      11 // we switch between 11 and 12 in software
+#define MATRIX02_PIN      12
 #define PEDALOMETER_PIN     13
 #define BUTTONLEFT      6
 #define SWITCHMODE      7
@@ -36,7 +37,7 @@
 #define STRIP_COUNT     60      // how many LEDs
 #define WATTHOURS_EEPROM_ADDRESS 20
 
-Adafruit_NeoMatrix matrix(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_PIN,  NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoMatrix matrix(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX01_PIN,  NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel pedalometer(STRIP_COUNT, PEDALOMETER_PIN, NEO_GRB + NEO_KHZ800);
 
 #define LED_BLACK		      0
@@ -102,14 +103,18 @@ void utilityModeLoop() {
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
     if (! digitalRead(BUTTONLEFT)) {
-      disNeostring(&matrix,"LEFlef", LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,"LEFlef", LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,"LEFlef", LED_WHITE_HIGH);
       delay(500);
       if (! digitalRead(BUTTONLEFT)) attemptShutdown(); // if button is still being held down, try to shut down
     } else if (! digitalRead(BUTTONRIGHT)) {
-      disNeostring(&matrix,"RIGrig", LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,"RIGrig", LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,"RIGrig", LED_WHITE_HIGH);
     } else {
-      //disNeostring(&matrix,intAlignRigiht(voltage*100)+intAlignRigiht(watts_pedal), LED_WHITE_HIGH);
-      disNeostring(&matrix,intAlignRigiht(millis()%1000)+intAlignRigiht(millis()%1000), LED_WHITE_HIGH);
+      //disNeostring(MATRIX01_PIN,intAlignRigiht(voltage*100), LED_WHITE_HIGH);
+      //disNeostring(MATRIX02_PIN,intAlignRigiht(watts_pedal()), LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,intAlignRigiht(millis()%1000), LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,intAlignRigiht(1000 - (millis()%1000)), LED_WHITE_HIGH);
     }
     int soc = estimateStateOfCharge();
     if (soc > 10) {
@@ -126,13 +131,16 @@ void energyBankingModeLoop() {
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
     if (! digitalRead(BUTTONLEFT)) {
-      disNeostring(&matrix,"LEFTleft", LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,"LEFTleft", LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,"LEFTleft", LED_WHITE_HIGH);
       delay(500);
       if (! digitalRead(BUTTONLEFT)) attemptShutdown(); // if button is still being held down, try to shut down
     } else if (! digitalRead(BUTTONRIGHT)) {
-      disNeostring(&matrix,"RIGHrigh", LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,"RIGHrigh", LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,"RIGHrigh", LED_WHITE_HIGH);
     } else { //Show watts_pedal() and energy_pedal on main signs.
-      disNeostring(&matrix,intAlignRigiht(watts_pedal)+intAlignRigiht(energy_pedal), LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,intAlignRigiht(watts_pedal()), LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,intAlignRigiht(energy_pedal), LED_WHITE_HIGH);
     }
     if (energy_balance > 600000) { //If we have just begun a new session, and energy_balance is <600, don't turn on inverter yet
       digitalWrite(RELAY_INVERTERON, HIGH); // turn on inverter
@@ -289,14 +297,15 @@ String intAlignRigiht(int num) {
   return spaces+String(num);
 }
 
-void disNeostring(Adafruit_NeoMatrix* matrix, String nval, uint32_t col) { // https://forums.adafruit.com/viewtopic.php?t=101790
+void disNeostring(int pin_number, String nval, uint32_t col) { // https://forums.adafruit.com/viewtopic.php?t=101790
   //uint8_t dval = bval; //uint8_t dval = map(constrain(V_Value, 0, 1200), 0, 1200, 0, 255);
-  matrix->clear();
-  matrix->setCursor(0, 0); // 3 allows 3 character, greater moves pixels to the right and allows fewer characters
-  matrix->setTextColor(col);
-  matrix->print(nval);
-  //matrix->drawLine(24, 7, map(dval, 0, 255, 24, 0), 7, matrix01->Color(map(dval, 0, 255, 255, 150),dval,0));
-  matrix->show();
+  matrix.setPin(pin_number); // set which pin to connect to
+  matrix.clear();
+  matrix.setCursor(0, 0); // 3 allows 3 character, greater moves pixels to the right and allows fewer characters
+  matrix.setTextColor(col);
+  matrix.print(nval);
+  //matrix.drawLine(24, 7, map(dval, 0, 255, 24, 0), 7, matrix01->Color(map(dval, 0, 255, 255, 150),dval,0));
+  matrix.show();
 }
 
 void doProtectionRelay() {
