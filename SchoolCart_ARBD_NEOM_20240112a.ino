@@ -4,6 +4,7 @@
 
 #define VOLTAGE_PROTECT   29.2 // if voltage > 29.2 open relay
 #define VOLTAGE_UNPROTECT 27.2 // if relay has been opened and  voltage is <=27.2, close relay
+#define VOLTAGE_SHUTDOWN  20.0 // if relay has been opened and  voltage is <=27.2, close relay
 #define HYSTERESIS_WATTS        25 // how many watts above inverter consumption is considered gaining
 #define TIMEOUT_UTILITYMODE     15*60*1000 // 15 minutes
 #define TIMEOUT_ENERGYBANKING   15*60*1000 // 15 minutes
@@ -340,6 +341,11 @@ void disNeostring(int pin_number, String nval, uint32_t col) { // https://forums
 void doProtectionRelay() {
   if (voltage > VOLTAGE_PROTECT) { digitalWrite(RELAY_OVERPEDAL, HIGH); } // disconnect pedallers
   if (voltage < VOLTAGE_UNPROTECT) { digitalWrite(RELAY_OVERPEDAL, LOW); } // don't disconnect pedallers
+  if ((voltage < VOLTAGE_SHUTDOWN) && (watts_pedal() < IDLE_THRESHOLD_PEDAL_WATTS)) {
+    Serial.println("Shutdown due to undervoltage");
+    reset_energy_balance();
+    attemptShutdown();
+  }
 }
 
 void attemptShutdown() {
