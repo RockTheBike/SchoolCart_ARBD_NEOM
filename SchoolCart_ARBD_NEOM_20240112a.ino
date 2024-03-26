@@ -4,6 +4,7 @@
 
 #define VOLTAGE_PROTECT   29.2 // if voltage > 29.2 open relay
 #define VOLTAGE_UNPROTECT 27.2 // if relay has been opened and  voltage is <=27.2, close relay
+#define HYSTERESIS_WATTS        25 // how many watts above inverter consumption is considered gaining
 #define VOLT_PIN        A0
 #define AMPS_IN_PIN     A3      // labeled PLUSRAIL/PLUSOUT IC2
 #define AMPS_OUT_PIN    A2      // labeled MINUSRAIL/MINUSOUT IC3
@@ -155,9 +156,9 @@ void energyBankingModeLoop() {
     }
     //uint32_t energy_balance = (millis()*250000UL) % 3690000000UL; // TODO: this is for testing only
     //uint32_t energy_balance = 3600000000UL/2; // TODO: this is for testing only
-    int trend = millis() % 9000 / 3000 - 1; // TODO: this is for testing only
-    if (watts_pedal() >  (watts_inverter() + 25))   trend = 1; // determine animation pattern on pedalometer
-    if (watts_pedal() <= (watts_inverter() + 25))   trend = 0;
+    int trend = millis() % 9000 / 3000 - 1; // this declaration is for testing only, gets overwritten below
+    if (watts_pedal() >  (watts_inverter() + HYSTERESIS_WATTS))   trend = 1; // determine animation pattern on pedalometer
+    if (watts_pedal() <= (watts_inverter() + HYSTERESIS_WATTS))   trend = 0;
     if (watts_pedal() < watts_inverter())           trend = -1;
     energyBankPedalometer(energy_balance/(    3600000000UL/59UL), trend); // 59 is max pedalometer, 60*60*1000000 is 1kwh
   }
