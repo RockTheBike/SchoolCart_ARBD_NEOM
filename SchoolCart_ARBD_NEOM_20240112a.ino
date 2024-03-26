@@ -50,12 +50,14 @@ Adafruit_NeoPixel pedalometer(STRIP_COUNT, PEDALOMETER_PIN, NEO_GRB + NEO_KHZ800
 uint32_t lastPrintInfo = 0;  // last time printInfo() happened
 uint32_t lastNeopixels = 0;  // last time NeoPixels updated
 uint32_t lastGetAnalogs = 0;  // last time getAnalogs() happened
+uint32_t animation_start_time = 0; // what time trending animation started
 float voltage = 0;              // system DC voltage
 float current_pedal = 0;        // pedal input current
 float current_inverter = 0;     // inverter output DC current
 uint32_t energy_pedal = 0;         // energy accumulators ALL IN MILLIJOULES
 uint32_t energy_inverter = 0;      // energy accumulators
 int32_t energy_balance;           // energy banking account value, loaded from EEPROM
+int trend = 0;                  // animation on energy banking pedalometer
 
 #define AVG_CYCLES 30 // how many times to average analog readings over
 
@@ -156,10 +158,20 @@ void energyBankingModeLoop() {
     }
     //uint32_t energy_balance = (millis()*250000UL) % 3690000000UL; // TODO: this is for testing only
     //uint32_t energy_balance = 3600000000UL/2; // TODO: this is for testing only
-    int trend = millis() % 9000 / 3000 - 1; // this declaration is for testing only, gets overwritten below
-    if (watts_pedal() >  (watts_inverter() + HYSTERESIS_WATTS))   trend = 1; // determine animation pattern on pedalometer
-    if (watts_pedal() <= (watts_inverter() + HYSTERESIS_WATTS))   trend = 0;
-    if (watts_pedal() < watts_inverter())           trend = -1;
+    if ((watts_pedal() >  (watts_inverter() + HYSTERESIS_WATTS) ) && ( trend != 1)) { // determine animation pattern on pedalometer
+      trend = 1;
+      animation_start_time = millis();
+    }
+    if (watts_pedal() < watts_inverter() ) {
+      if ( trend != -1) {
+        trend = -1;
+        animation_start_time = millis();
+      }
+    } else if ((watts_pedal() <= (watts_inverter() + HYSTERESIS_WATTS) ) && ( trend != 0)) {
+      trend = 0;
+      animation_start_time = millis();
+    }
+    //trend = millis() % 9000 / 3000 - 1; // TODO: for testing
     energyBankPedalometer(energy_balance/(    3600000000UL/59UL), trend); // 59 is max pedalometer, 60*60*1000000 is 1kwh
   }
 }
@@ -179,7 +191,7 @@ void energyBankPedalometer(int pixlevel, int trend){
     if (i <= pixlevel) {pedalometer.setPixelColor(i, pedalometer.Color(0,255,0));}
     else {pedalometer.setPixelColor(i, 0);}         //  Set pixel's color to black
   }
-  int animationtime = millis() % 1000; // animation sequence counter
+  int animationtime = (millis() - animation_start_time) % 1000; // animation sequence counter
   if (trend == 1) { // upward animation
     if (animationtime > 750)                         pedalometer.setPixelColor(pixlevel + 3, pedalometer.Color(0,255,0));
     if (animationtime > 500 && animationtime <= 750) pedalometer.setPixelColor(pixlevel + 2, pedalometer.Color(0,255,0));
