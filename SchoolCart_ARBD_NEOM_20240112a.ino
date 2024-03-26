@@ -142,6 +142,15 @@ void utilityModeLoop() {
 }
 
 void energyBankingModeLoop() {
+  if (Serial.available()) {
+    if (Serial.read() == 'e') {
+      uint32_t serial_integer = Serial.parseInt();
+      energy_balance = serial_integer * 3600000; // set the number of watt-hours
+      store_energy_balance();
+    } else {
+      while (Serial.available()) Serial.read(); // flush serial buffer
+    }
+  }
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
     if (! digitalRead(BUTTONRIGHT)) {
