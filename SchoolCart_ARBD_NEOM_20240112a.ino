@@ -106,18 +106,18 @@ void utilityModeLoop() {
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
     if (! digitalRead(BUTTONLEFT)) {
-      disNeostring(MATRIX01_PIN,"LEFlef", LED_WHITE_HIGH);
-      disNeostring(MATRIX02_PIN,"LEFlef", LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,"off", LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,"off", LED_WHITE_HIGH);
       delay(500);
       if (! digitalRead(BUTTONLEFT)) attemptShutdown(); // if button is still being held down, try to shut down
     } else if (! digitalRead(BUTTONRIGHT)) {
-      disNeostring(MATRIX01_PIN,"RIGrig", LED_WHITE_HIGH);
-      disNeostring(MATRIX02_PIN,"RIGrig", LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,"---", LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,"---", LED_WHITE_HIGH);
     } else {
-      //disNeostring(MATRIX01_PIN,intAlignRigiht(voltage*100), LED_WHITE_HIGH);
-      //disNeostring(MATRIX02_PIN,intAlignRigiht(watts_pedal()), LED_WHITE_HIGH);
-      disNeostring(MATRIX01_PIN,intAlignRigiht(millis()%1000), LED_WHITE_HIGH);
-      disNeostring(MATRIX02_PIN,intAlignRigiht(1000 - (millis()%1000)), LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,intAlignRigiht(watts_pedal()), LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,intAlignRigiht(energy_pedal/3600000), LED_WHITE_HIGH);
+      //disNeostring(MATRIX01_PIN,intAlignRigiht(millis()%1000), LED_WHITE_HIGH);
+      //disNeostring(MATRIX02_PIN,intAlignRigiht(1000 - (millis()%1000)), LED_WHITE_HIGH);
     }
     int soc = estimateStateOfCharge();
     if (soc > 10) {
@@ -125,7 +125,7 @@ void utilityModeLoop() {
     } else if (soc < 5) {
       digitalWrite(RELAY_INVERTERON, LOW); // shut inverter OFF
     }
-    soc = (millis() / 200) % 100; // TODO: this is for testing only
+    //soc = (millis() / 200) % 100; // TODO: this is for testing only
     utilityModePedalometer(soc);
   }
 }
