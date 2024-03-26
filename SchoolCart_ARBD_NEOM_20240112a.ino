@@ -30,14 +30,14 @@
 #define INVERTER_AMPS2_OFFSET 120.5
 
 #define INTERVAL_PRINT  1000    // time between printInfo() events
-#define INTERVAL_NEOPIXELS 100  // time between neopixel update events WHICH CORRUPTS millis()
+#define INTERVAL_NEOPIXELS 250  // time between neopixel update events WHICH CORRUPTS millis()
 #define BRIGHTNESS      20
 #define MATRIX_HEIGHT   8       // matrix height
 #define MATRIX_WIDTH    18      // matrix width
 #define STRIP_COUNT     60      // how many LEDs
 #define WATTHOURS_EEPROM_ADDRESS 20
 
-Adafruit_NeoMatrix matrix(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX01_PIN,  NEO_MATRIX_TOP + NEO_MATRIX_LEFT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoMatrix matrix(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX01_PIN,  NEO_MATRIX_BOTTOM + NEO_MATRIX_RIGHT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel pedalometer(STRIP_COUNT, PEDALOMETER_PIN, NEO_GRB + NEO_KHZ800);
 
 #define LED_BLACK		      0
@@ -131,16 +131,22 @@ void energyBankingModeLoop() {
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
     if (! digitalRead(BUTTONLEFT)) {
-      disNeostring(MATRIX01_PIN,"LEFTleft", LED_WHITE_HIGH);
-      disNeostring(MATRIX02_PIN,"LEFTleft", LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,"off", LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,"off", LED_WHITE_HIGH);
       delay(500);
       if (! digitalRead(BUTTONLEFT)) attemptShutdown(); // if button is still being held down, try to shut down
     } else if (! digitalRead(BUTTONRIGHT)) {
-      disNeostring(MATRIX01_PIN,"RIGHrigh", LED_WHITE_HIGH);
-      disNeostring(MATRIX02_PIN,"RIGHrigh", LED_WHITE_HIGH);
+      disNeostring(MATRIX01_PIN,"rst", LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,"rst", LED_WHITE_HIGH);
+      delay(1000);
+      if (! digitalRead(BUTTONRIGHT)) {
+        disNeostring(MATRIX01_PIN,"RST", LED_WHITE_HIGH);
+        disNeostring(MATRIX02_PIN,"RST", LED_WHITE_HIGH);
+        reset_energy_balance();
+      }
     } else { //Show watts_pedal() and energy_pedal on main signs.
       disNeostring(MATRIX01_PIN,intAlignRigiht(watts_pedal()), LED_WHITE_HIGH);
-      disNeostring(MATRIX02_PIN,intAlignRigiht(energy_pedal), LED_WHITE_HIGH);
+      disNeostring(MATRIX02_PIN,intAlignRigiht(energy_pedal/3600000), LED_WHITE_HIGH);
     }
     if (energy_balance > 600000) { //If we have just begun a new session, and energy_balance is <600, don't turn on inverter yet
       digitalWrite(RELAY_INVERTERON, HIGH); // turn on inverter
@@ -319,6 +325,8 @@ void doProtectionRelay() {
 
 void attemptShutdown() {
   if (switchInUtilityMode() == false) store_energy_balance(); // save our present energy bank account
+  disNeostring(MATRIX01_PIN,"OFF", LED_WHITE_HIGH);
+  disNeostring(MATRIX02_PIN,"OFF", LED_WHITE_HIGH);
   digitalWrite(RELAY_INVERTERON, LOW); // shut inverter OFF
   digitalWrite(RELAY_DROPSTOP, LOW); // turn off
   while(digitalRead(BUTTONRIGHT)); // wait until unless right button is pressed (TODO)
