@@ -5,6 +5,11 @@
 #define VOLTAGE_PROTECT   29.2 // if voltage > 29.2 open relay
 #define VOLTAGE_UNPROTECT 27.2 // if relay has been opened and  voltage is <=27.2, close relay
 #define HYSTERESIS_WATTS        25 // how many watts above inverter consumption is considered gaining
+#define TIMEOUT_UTILITYMODE     15*60*1000 // 15 minutes
+#define TIMEOUT_ENERGYBANKING   15*60*1000 // 15 minutes
+#define IDLE_THRESHOLD_PEDAL_WATTS      25 // below this wattage input is considered idle
+#define IDLE_THRESHOLD_INVERTER_WATTS   25 // below this wattage output is considered idle
+
 #define VOLT_PIN        A0
 #define AMPS_IN_PIN     A3      // labeled PLUSRAIL/PLUSOUT IC2
 #define AMPS_OUT_PIN    A2      // labeled MINUSRAIL/MINUSOUT IC3
@@ -51,6 +56,7 @@ uint32_t lastPrintInfo = 0;  // last time printInfo() happened
 uint32_t lastNeopixels = 0;  // last time NeoPixels updated
 uint32_t lastGetAnalogs = 0;  // last time getAnalogs() happened
 uint32_t animation_start_time = 0; // what time trending animation started
+uint32_t lastInteractionTime = 0; // last time there was charging or discharging
 float voltage = 0;              // system DC voltage
 float current_pedal = 0;        // pedal input current
 float current_inverter = 0;     // inverter output DC current
@@ -128,6 +134,10 @@ void utilityModeLoop() {
     //soc = (millis() / 200) % 100; // TODO: this is for testing only
     utilityModePedalometer(soc);
   }
+  if ((watts_pedal() > IDLE_THRESHOLD_PEDAL_WATTS) || (watts_inverter() > IDLE_THRESHOLD_INVERTER_WATTS)) {
+    lastInteractionTime = millis(); // update idle detector
+  }
+  if (millis() - lastInteractionTime > TIMEOUT_UTILITYMODE) attemptShutdown();
 }
 
 void energyBankingModeLoop() {
@@ -174,6 +184,10 @@ void energyBankingModeLoop() {
     //trend = millis() % 9000 / 3000 - 1; // TODO: for testing
     energyBankPedalometer(energy_balance/(    3600000000UL/59UL), trend); // 59 is max pedalometer, 60*60*1000000 is 1kwh
   }
+  if ((watts_pedal() > IDLE_THRESHOLD_PEDAL_WATTS) || (watts_inverter() > IDLE_THRESHOLD_INVERTER_WATTS)) {
+    lastInteractionTime = millis(); // update idle detector
+  }
+  if (millis() - lastInteractionTime > TIMEOUT_ENERGYBANKING) attemptShutdown();
 }
 
 void energyBankPedalometer(int pixlevel, int trend) {
