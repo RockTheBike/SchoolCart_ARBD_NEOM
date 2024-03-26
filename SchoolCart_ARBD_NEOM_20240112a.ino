@@ -337,7 +337,11 @@ void doProtectionRelay() {
 }
 
 void attemptShutdown() {
-  if (switchInUtilityMode() == false) store_energy_balance(); // save our present energy bank account
+  if (switchInUtilityMode() == false) {
+    int ebsoc = ( energy_balance / 3600000 ) / 10; // calculate percentage
+    Serial.println("Setting energy_balance to "+String(ebsoc)+"% and storing to EEPROM...");
+    store_energy_balance(); // save our present energy bank account
+  }
   disNeostring(MATRIX01_PIN,"OFF", LED_WHITE_HIGH);
   disNeostring(MATRIX02_PIN,"OFF", LED_WHITE_HIGH);
   digitalWrite(RELAY_INVERTERON, LOW); // shut inverter OFF
@@ -371,8 +375,15 @@ void load_energy_balance() {
 }
 
 void reset_energy_balance() {
-  Serial.println("Zeroing energy_balance and storing to EEPROM");
-  energy_balance = 0;
+/* call estimateStateOfCharge() to see if energyBankBalance needs to be higher than 0 at start.
+   If battery state of charge is higher than 66% then adjust initial bank account according to the following table.
+   As a function, for every percent higher than 66, multiply that difference by 3.
+   70 - 66 = 4 * 3 = 12. 12 is the starting energy bank balance. */
+  int ebsoc = 0; // energy bank state of charge, default 0 unless battery is above 66% SOC
+  int batterySOC = estimateStateOfCharge(); // get battery state of charge
+  if ( batterySOC > 66 ) ebsoc = 3 * (batterySOC - 66);
+  energy_balance = ( 3600000000 * ebsoc ) / 100 ;
+  Serial.println("Setting energy_balance to "+String(ebsoc)+"% and storing to EEPROM...");
   store_energy_balance();
   delay(1000); // otherwise it resets a million times each press
 }
