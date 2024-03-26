@@ -43,7 +43,7 @@ Adafruit_NeoPixel pedalometer(STRIP_COUNT, PEDALOMETER_PIN, NEO_GRB + NEO_KHZ800
 
 #define LED_BLACK		      0
 #define LED_RED_HIGH 		  (31 << 11)
-#define LED_GREEN_HIGH 		(63 << 5)  
+#define LED_GREEN_HIGH 		(63 << 5)
 #define LED_BLUE_HIGH 		31
 #define LED_WHITE_HIGH		(LED_RED_HIGH    + LED_GREEN_HIGH    + LED_BLUE_HIGH)
 
@@ -176,7 +176,7 @@ void energyBankingModeLoop() {
   }
 }
 
-void energyBankPedalometer(int pixlevel, int trend){
+void energyBankPedalometer(int pixlevel, int trend) {
   //Display energyBankBalance as a % of the available pixels, in green.
   //If watts_pedal() > watts_inverter then the pedalers are putting in more than
   //the inverter. Show them things are heading higher. Do this by making the
@@ -210,7 +210,7 @@ void energyBankPedalometer(int pixlevel, int trend){
   pedalometer.show();
 }
 
-void utilityModePedalometer(int soc){
+void utilityModePedalometer(int soc) {
   //Display stateOfCharge as a %
   // Light up a single ring. This pedalometer is not cumulative.
   // for example, If state of charge is 50%, rather than turn on the bottom 30 rows, light up only the 30th row.
@@ -226,7 +226,7 @@ boolean switchInUtilityMode() { // LEFT is LOW/FALSE, RIGHT is HIGH/TRUE
   return digitalRead(SWITCHMODE);
 }
 
-int estimateStateOfCharge() { 
+int estimateStateOfCharge() {
   int soc = 0;
   if (voltage >= 20.0)  soc =   0 +  (voltage - 20.0 ) * (10 / 4.0);  //  0,   20.0
   if (voltage >= 24.0)  soc =  10 +  (voltage - 24.0 ) * (10 / 1.6);  //  10,  24.0
@@ -235,11 +235,11 @@ int estimateStateOfCharge() {
   if (voltage >= 26.0)  soc =  40 +  (voltage - 26.0 ) * (10 / 0.2);  //  40,  26.0
   if (voltage >= 26.2)  soc =  50 +  (voltage - 26.2 ) * (10 / 0.1);  //  50,  26.2
   if (voltage >= 26.3)  soc =  60 +  (voltage - 26.3 ) * (10 / 0.05); //  60,  26.3
-  if (voltage >= 26.35) soc =  66 +  (voltage - 26.35) * (10 / 0.05); //  66,  26.35  
+  if (voltage >= 26.35) soc =  66 +  (voltage - 26.35) * (10 / 0.05); //  66,  26.35
   if (voltage >= 26.4)  soc =  70 +  (voltage - 26.4 ) * (10 / 0.2);  //  70,  26.4
   if (voltage >= 26.6)  soc =  80 +  (voltage - 26.6 ) * (10 / 0.2);  //  80,  26.6
   if (voltage >= 26.8)  soc =  90 +  (voltage - 26.8 ) * (10 / 0.4);  //  90,  26.8
-  if (voltage >= 27.2)  soc =  100;                                   //  100, 27.2 
+  if (voltage >= 27.2)  soc =  100;                                   //  100, 27.2
   return soc;
 }
 
@@ -288,15 +288,11 @@ void getAnalogs() {
   if (energy_balance < 0) energy_balance = 0; // don't let it go negative, we don't do that
 }
 
-float watts_pedal() {
-  return voltage * current_pedal;
-}
+float watts_pedal() { return voltage * current_pedal; }
 
-float watts_inverter() {
-  return voltage * current_inverter;
-}
+float watts_inverter() { return voltage * current_inverter; }
 
-float average(float val, float avg){
+float average(float val, float avg) {
   if (avg == 0) avg = val;
   return (val + (avg * (AVG_CYCLES - 1))) / AVG_CYCLES;
 }
@@ -310,9 +306,9 @@ String intAlignRigiht(int num) {
   else if (num >= 10.00 && num < 100.00)      {space=1;    cursorPos=2;}
   else if (num >= 100.00 && num < 1000.00)    {space=0;    cursorPos=2;}
   else if (num >= 1000.00 && num < 10000.00)  {space=0;    cursorPos=2;}
-  
+
   for (uint8_t s=0; s<space; s++) spaces += F(" ");
-  
+
   return spaces+String(num);
 }
 
@@ -328,12 +324,8 @@ void disNeostring(int pin_number, String nval, uint32_t col) { // https://forums
 }
 
 void doProtectionRelay() {
-  if (voltage > VOLTAGE_PROTECT) {
-    digitalWrite(RELAY_OVERPEDAL, HIGH); // disconnect pedallers
-  }
-  if (voltage < VOLTAGE_UNPROTECT) {
-    digitalWrite(RELAY_OVERPEDAL, LOW); // don't disconnect pedallers
-  }
+  if (voltage > VOLTAGE_PROTECT) { digitalWrite(RELAY_OVERPEDAL, HIGH); } // disconnect pedallers
+  if (voltage < VOLTAGE_UNPROTECT) { digitalWrite(RELAY_OVERPEDAL, LOW); } // don't disconnect pedallers
 }
 
 void attemptShutdown() {
