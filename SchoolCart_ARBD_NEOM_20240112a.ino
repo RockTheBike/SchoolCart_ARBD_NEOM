@@ -105,12 +105,12 @@ void loop() {
 void utilityModeLoop() {
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
-    if (! digitalRead(BUTTONLEFT)) {
+    if (! digitalRead(BUTTONRIGHT)) {
       disNeostring(MATRIX01_PIN,"off", LED_WHITE_HIGH);
       disNeostring(MATRIX02_PIN,"off", LED_WHITE_HIGH);
       delay(500);
-      if (! digitalRead(BUTTONLEFT)) attemptShutdown(); // if button is still being held down, try to shut down
-    } else if (! digitalRead(BUTTONRIGHT)) {
+      if (! digitalRead(BUTTONRIGHT)) attemptShutdown(); // if button is still being held down, try to shut down
+    } else if (! digitalRead(BUTTONLEFT)) {
       disNeostring(MATRIX01_PIN,"---", LED_WHITE_HIGH);
       disNeostring(MATRIX02_PIN,"---", LED_WHITE_HIGH);
     } else {
@@ -133,16 +133,16 @@ void utilityModeLoop() {
 void energyBankingModeLoop() {
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
-    if (! digitalRead(BUTTONLEFT)) {
+    if (! digitalRead(BUTTONRIGHT)) {
       disNeostring(MATRIX01_PIN,"off", LED_WHITE_HIGH);
       disNeostring(MATRIX02_PIN,"off", LED_WHITE_HIGH);
       delay(500);
-      if (! digitalRead(BUTTONLEFT)) attemptShutdown(); // if button is still being held down, try to shut down
-    } else if (! digitalRead(BUTTONRIGHT)) {
+      if (! digitalRead(BUTTONRIGHT)) attemptShutdown(); // if button is still being held down, try to shut down
+    } else if (! digitalRead(BUTTONLEFT)) {
       disNeostring(MATRIX01_PIN,"rst", LED_WHITE_HIGH);
       disNeostring(MATRIX02_PIN,"rst", LED_WHITE_HIGH);
       delay(1000);
-      if (! digitalRead(BUTTONRIGHT)) {
+      if (! digitalRead(BUTTONLEFT)) {
         disNeostring(MATRIX01_PIN,"RST", LED_WHITE_HIGH);
         disNeostring(MATRIX02_PIN,"RST", LED_WHITE_HIGH);
         reset_energy_balance();
@@ -338,8 +338,9 @@ void attemptShutdown() {
   disNeostring(MATRIX02_PIN,"OFF", LED_WHITE_HIGH);
   digitalWrite(RELAY_INVERTERON, LOW); // shut inverter OFF
   digitalWrite(RELAY_DROPSTOP, LOW); // turn off
-  while(digitalRead(BUTTONRIGHT)); // wait until unless right button is pressed (TODO)
-  delay(2000);  // power will disappear by now
+  delay(2000);  // power will disappear by now unless we're connected to USB
+  // the next lines only run if we're connected to USB and power didn't disappear
+  while(digitalRead(BUTTONRIGHT)); // wait until unless right button is pressed
   digitalWrite(RELAY_DROPSTOP, HIGH); // if we're still on might as well own it
 }
 
