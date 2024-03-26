@@ -236,13 +236,13 @@ void printInfo() {
   if (digitalRead(RELAY_INVERTERON)) Serial.print("INV,");
   if (digitalRead(RELAY_OVERPEDAL)) Serial.print("OVP,");
   if (digitalRead(RELAY_DROPSTOP)) Serial.print("DSR,");
-  Serial.println(String(millis()/1000)+"	voltage:"+String(voltage)+
+  Serial.println(String(millis()/1000)+"	volt:"+String(voltage)+
       "	SOC:"+String(estimateStateOfCharge())+
-      "	"+String(analogRead(AMPS_IN_PIN))+" amps_in:"+String(current_pedal)+
-      "	current_inverter: "+String(current_inverter)+
-      " energy_pedal:"+String(energy_pedal/1000)+
-      " energy_inverter:"+String(energy_inverter/1000)+
-      " energy_balance:"+String(energy_balance/1000));
+      "	watts_pedal: "+String(watts_pedal())+
+      "	watts_inverter: "+String(watts_inverter())+
+      "	_pedal:"+String(float(energy_pedal)/3600000)+
+      "	_inverter:"+String(float(energy_inverter)/3600000)+
+      "	_balance:"+String(float(energy_balance)/3600000));
 }
 
 void getAnalogs() {
