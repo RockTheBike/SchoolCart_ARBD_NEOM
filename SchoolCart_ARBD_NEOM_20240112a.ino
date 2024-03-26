@@ -63,7 +63,7 @@ float current_pedal = 0;        // pedal input current
 float current_inverter = 0;     // inverter output DC current
 uint32_t energy_pedal = 0;         // energy accumulators ALL IN MILLIJOULES
 uint32_t energy_inverter = 0;      // energy accumulators
-int32_t energy_balance;           // energy banking account value, loaded from EEPROM
+uint32_t energy_balance;           // energy banking account value, loaded from EEPROM
 int trend = 0;                  // animation on energy banking pedalometer
 
 #define AVG_CYCLES 30 // how many times to average analog readings over
@@ -173,7 +173,7 @@ void energyBankingModeLoop() {
     }
     if (energy_balance > 600000) { //If we have just begun a new session, and energy_balance is <600, don't turn on inverter yet
       digitalWrite(RELAY_INVERTERON, HIGH); // turn on inverter
-    } else if (energy_balance <= 0) {
+    } else if (energy_balance == 0) {
       digitalWrite(RELAY_INVERTERON, LOW); // shut inverter OFF
     }
     //uint32_t energy_balance = (millis()*250000UL) % 3690000000UL; // TODO: this is for testing only
@@ -309,7 +309,12 @@ void getAnalogs() {
 
   energy_balance  += watts_pedal()    * integrationTime; // adjust energy_balance
   energy_balance  -= watts_inverter() * integrationTime; // adjust energy_balance
-  if (energy_balance < 0) energy_balance = 0; // don't let it go negative, we don't do that
+  if ((energy_balance > 3600000000 ) && (energy_balance < 3960000000)) { // we went past 1000 (from 999)
+    energy_balance = 3600000000 ; // don't let it go over 1000, we don't do that
+  } // uint32_t maxes out at 1193 * 3600000
+  if (energy_balance > 3960000000) {
+    energy_balance = 0; // don't let it go negative, we don't do that
+  }
 }
 
 float watts_pedal() { return voltage * current_pedal; }
