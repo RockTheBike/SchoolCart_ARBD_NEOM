@@ -372,10 +372,11 @@ void attemptShutdown() {
   disNeostring(MATRIX02_PIN,"OFF", LED_WHITE_HIGH);
   digitalWrite(RELAY_INVERTERON, LOW); // shut inverter OFF
   digitalWrite(RELAY_DROPSTOP, LOW); // turn off
-  delay(2000);  // power will disappear by now unless we're connected to USB
+  delay(5000);  // power will disappear by now unless we're connected to USB
   // the next lines only run if we're connected to USB and power didn't disappear
-  while(digitalRead(BUTTONRIGHT)); // wait until unless right button is pressed
   digitalWrite(RELAY_DROPSTOP, HIGH); // if we're still on might as well own it
+  // also the above line prevents a situation where charging continues and we don't want the diode taking all the current
+  while(digitalRead(BUTTONRIGHT)); // wait until unless right button is pressed
 }
 
 union float_and_byte { // https://www.tutorialspoint.com/cprogramming/c_unions
