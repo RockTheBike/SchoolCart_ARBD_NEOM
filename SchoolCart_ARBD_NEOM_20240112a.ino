@@ -11,6 +11,7 @@
 #define IDLE_THRESHOLD_PEDAL_WATTS      25 // below this wattage input is considered idle
 #define IDLE_THRESHOLD_INVERTER_WATTS   25 // below this wattage output is considered idle
 #define RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS 500 // inverter wattage at which LEDs are at full brightness
+#define RED_LIGHTS_WATTAGE_BLINKING        1200 // inverter wattage at which LEDs are BLINKING
 
 #define VOLT_PIN        A0
 #define AMPS_IN_PIN     A3      // labeled PLUSRAIL/PLUSOUT IC2
@@ -379,6 +380,9 @@ void doInverterLeds() {
     }
   } else {
     digitalWrite(RED_LED_LIGHTS, LOW); // turn off red LEDs
+  }
+  if (watts_inverter() > RED_LIGHTS_WATTAGE_BLINKING) { // blink the red LEDs as a warning
+    digitalWrite(RED_LED_LIGHTS, (millis() % 1000 > 500)); // blink on/off once per second
   }
 }
 
