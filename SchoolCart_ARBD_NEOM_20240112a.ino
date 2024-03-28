@@ -6,8 +6,8 @@
 #define VOLTAGE_UNPROTECT 27.2 // if relay has been opened and  voltage is <=27.2, close relay
 #define VOLTAGE_SHUTDOWN  20.0 // if relay has been opened and  voltage is <=27.2, close relay
 #define HYSTERESIS_WATTS        25 // how many watts above inverter consumption is considered gaining
-#define TIMEOUT_UTILITYMODE     15*60*1000 // 15 minutes
-#define TIMEOUT_ENERGYBANKING   15*60*1000 // 15 minutes
+#define TIMEOUT_UTILITYMODE     (15*60000) // 15 minutes NOTE: 1*60*1000 DOESNT WORK RIGHT
+#define TIMEOUT_ENERGYBANKING   (15*60000) // 15 minutes       results in "-5536" not 60000
 #define IDLE_THRESHOLD_PEDAL_WATTS      25 // below this wattage input is considered idle
 #define IDLE_THRESHOLD_INVERTER_WATTS   25 // below this wattage output is considered idle
 #define RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS 500 // inverter wattage at which LEDs are at full brightness
@@ -143,7 +143,7 @@ void utilityModeLoop() {
   if ((watts_pedal() > IDLE_THRESHOLD_PEDAL_WATTS) || (watts_inverter() > IDLE_THRESHOLD_INVERTER_WATTS)) {
     lastInteractionTime = millis(); // update idle detector
   }
-  if (millis() - lastInteractionTime > TIMEOUT_UTILITYMODE) attemptShutdown();
+  if ((millis() - lastInteractionTime) > TIMEOUT_UTILITYMODE) attemptShutdown();
 }
 
 void energyBankingModeLoop() {
@@ -203,7 +203,10 @@ void energyBankingModeLoop() {
   if ((watts_pedal() > IDLE_THRESHOLD_PEDAL_WATTS) || (watts_inverter() > IDLE_THRESHOLD_INVERTER_WATTS)) {
     lastInteractionTime = millis(); // update idle detector
   }
-  if (millis() - lastInteractionTime > TIMEOUT_ENERGYBANKING) attemptShutdown();
+  if ((millis() - lastInteractionTime) > TIMEOUT_ENERGYBANKING) {
+    Serial.println("attemptShutdown();");
+    attemptShutdown();
+  }
 }
 
 void energyBankPedalometer(int pixlevel, int trend) {
