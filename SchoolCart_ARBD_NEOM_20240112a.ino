@@ -39,7 +39,7 @@
 #define INVERTER_AMPS2_COEFF   12.63  // two of two current sensors for inverter
 #define INVERTER_AMPS2_OFFSET 120.5
 
-#define INTERVAL_PRINT  1000    // time between printInfo() events
+#define INTERVAL_PRINT  6000    // time between printInfo() events
 #define INTERVAL_NEOPIXELS 250  // time between neopixel update events WHICH CORRUPTS millis()
 #define BRIGHTNESS      20
 #define MATRIX_HEIGHT   8       // matrix height
@@ -275,6 +275,7 @@ int estimateStateOfCharge() {
 
 void printInfo() {
   // voltage = (millis() % 7200) / 1000.0 + 20.0; // TODO: take out this debugging feature
+#ifdef DEBUG
   if (digitalRead(RELAY_INVERTERON)) Serial.print("INV,");
   if (digitalRead(RELAY_OVERPEDAL)) Serial.print("OVP,");
   if (digitalRead(RELAY_DROPSTOP)) Serial.print("DSR,");
@@ -285,6 +286,12 @@ void printInfo() {
       "	_pedal:"+String(float(energy_pedal)/3600000)+
       "	_inverter:"+String(float(energy_inverter)/3600000)+
       "	_balance:"+String(float(energy_balance)/3600000));
+#else
+  //23:45:00. 23.5V. Power In: 223. Power Out: 400. Bank: 480Wh
+  char timestamp[10]; // string to hold timestamp
+  sprintf(timestamp, "%02d:%02d:%02d", int(millis() / 3600000), int((millis() % 3600000) / 60000), int((millis() % 60000) / 1000));
+  Serial.println(String(timestamp)+". "+String(voltage,1)+"V. Power In: "+String(watts_pedal())+". Power Out: "+String(watts_inverter())+". Bank: "+String(energy_balance / 3600000)+"Wh");
+#endif
 }
 
 void getAnalogs() {
