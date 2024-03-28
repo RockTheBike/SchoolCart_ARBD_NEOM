@@ -68,7 +68,7 @@ uint32_t energy_inverter = 0;      // energy accumulators
 uint32_t energy_balance;           // energy banking account value, loaded from EEPROM
 int trend = 0;                  // animation on energy banking pedalometer
 
-#define AVG_CYCLES 30 // how many times to average analog readings over
+#define AVG_CYCLES 50 // how many times to average analog readings over
 
 void setup() {
   pinMode(RELAY_DROPSTOP, OUTPUT);
@@ -101,7 +101,6 @@ void setup() {
 void loop() {
   getAnalogs(); // read voltages and currents, integrate energy counts, calculate energy_balance
   doProtectionRelay(); // disconnect pedallers if necessary, shutoff inverter if necessary
-  doInverterLeds(); // control LEDs under plastic panel
   if (switchInUtilityMode()) {
     utilityModeLoop();
   } else {
@@ -116,6 +115,7 @@ void loop() {
 void utilityModeLoop() {
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
+    doInverterLeds(); // control LEDs under plastic panel
     if (! digitalRead(BUTTONRIGHT)) {
       disNeostring(MATRIX01_PIN,"off", LED_WHITE_HIGH);
       disNeostring(MATRIX02_PIN,"off", LED_WHITE_HIGH);
@@ -157,6 +157,7 @@ void energyBankingModeLoop() {
   }
   if (millis() - lastNeopixels > INTERVAL_NEOPIXELS) { // update neopixels at a reasonable rate
     lastNeopixels = millis(); // reset interval
+    doInverterLeds(); // control LEDs under plastic panel
     if (! digitalRead(BUTTONRIGHT)) {
       disNeostring(MATRIX01_PIN,"off", LED_WHITE_HIGH);
       disNeostring(MATRIX02_PIN,"off", LED_WHITE_HIGH);
@@ -348,6 +349,8 @@ String intAlignRigiht(int num) {
 void disNeostring(int pin_number, String nval, uint32_t col) { // https://forums.adafruit.com/viewtopic.php?t=101790
   //uint8_t dval = bval; //uint8_t dval = map(constrain(V_Value, 0, 1200), 0, 1200, 0, 255);
   matrix.setPin(pin_number); // set which pin to connect to
+  if (pin_number == MATRIX01_PIN) pinMode(MATRIX02_PIN, OUTPUT);
+  if (pin_number == MATRIX02_PIN) pinMode(MATRIX01_PIN, OUTPUT);
   matrix.clear();
   matrix.setCursor(0, 0); // 3 allows 3 character, greater moves pixels to the right and allows fewer characters
   matrix.setTextColor(col);
@@ -367,9 +370,13 @@ void doProtectionRelay() {
 }
 
 void doInverterLeds() {
+  static int led_brightness = 0;
   if (digitalRead(RELAY_INVERTERON)) {
-    int led_brightness = constrain(watts_inverter() * 255 / RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS, 0, 255);
-    analogWrite(RED_LED_LIGHTS, led_brightness);
+    int new_led_brightness = constrain(watts_inverter() * 255 / RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS, 0, 255);
+    if (led_brightness != new_led_brightness) { // only update if led_brightness it has changed
+      analogWrite(RED_LED_LIGHTS, new_led_brightness);
+      led_brightness = new_led_brightness;
+    }
   } else {
     digitalWrite(RED_LED_LIGHTS, LOW); // turn off red LEDs
   }
