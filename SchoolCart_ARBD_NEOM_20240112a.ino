@@ -411,6 +411,8 @@ void reset_energy_balance() {
   int batterySOC = estimateStateOfCharge(); // get battery state of charge
   if ( batterySOC > 66 ) ebsoc = 3 * (batterySOC - 66);
   energy_balance = ( 3600000000 * ebsoc ) / 100 ;
+  energy_pedal = 0;    // reset these too
+  energy_inverter = 0; // reset these too
   Serial.println("Setting energy_balance to "+String(ebsoc)+"% and storing to EEPROM...");
   store_energy_balance();
   delay(1000); // otherwise it resets a million times each press
