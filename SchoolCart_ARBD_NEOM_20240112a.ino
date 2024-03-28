@@ -10,6 +10,7 @@
 #define TIMEOUT_ENERGYBANKING   15*60*1000 // 15 minutes
 #define IDLE_THRESHOLD_PEDAL_WATTS      25 // below this wattage input is considered idle
 #define IDLE_THRESHOLD_INVERTER_WATTS   25 // below this wattage output is considered idle
+#define RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS 500 // inverter wattage at which LEDs are at full brightness
 
 #define VOLT_PIN        A0
 #define AMPS_IN_PIN     A3      // labeled PLUSRAIL/PLUSOUT IC2
@@ -19,6 +20,7 @@
 #define MATRIX01_PIN      11 // we switch between 11 and 12 in software
 #define MATRIX02_PIN      12
 #define PEDALOMETER_PIN     13
+#define RED_LED_LIGHTS  5
 #define BUTTONLEFT      6
 #define SWITCHMODE      7
 #define BUTTONRIGHT     8
@@ -73,6 +75,7 @@ void setup() {
   digitalWrite(RELAY_DROPSTOP, HIGH); // turn on relay so we stay on until we decide otherwise
   pinMode(RELAY_INVERTERON, OUTPUT);
   pinMode(RELAY_OVERPEDAL, OUTPUT);
+  pinMode(RED_LED_LIGHTS, OUTPUT);
   Serial.begin(115200);
   Serial.println("SchoolCart_ARBD_NEOM_20240112a.ino");
   digitalWrite(BUTTONLEFT,HIGH);  // enable internal pull-up resistor
@@ -98,6 +101,7 @@ void setup() {
 void loop() {
   getAnalogs(); // read voltages and currents, integrate energy counts, calculate energy_balance
   doProtectionRelay(); // disconnect pedallers if necessary, shutoff inverter if necessary
+  doInverterLeds(); // control LEDs under plastic panel
   if (switchInUtilityMode()) {
     utilityModeLoop();
   } else {
@@ -362,6 +366,15 @@ void doProtectionRelay() {
   }
 }
 
+void doInverterLeds() {
+  if (digitalRead(RELAY_INVERTERON)) {
+    int led_brightness = constrain(watts_inverter() * 255 / RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS, 0, 255);
+    analogWrite(RED_LED_LIGHTS, led_brightness);
+  } else {
+    digitalWrite(RED_LED_LIGHTS, LOW); // turn off red LEDs
+  }
+}
+
 void attemptShutdown() {
   if (switchInUtilityMode() == false) {
     int ebsoc = ( energy_balance / 3600000 ) / 10; // calculate percentage
@@ -371,6 +384,7 @@ void attemptShutdown() {
   disNeostring(MATRIX01_PIN,"OFF", LED_WHITE_HIGH);
   disNeostring(MATRIX02_PIN,"OFF", LED_WHITE_HIGH);
   digitalWrite(RELAY_INVERTERON, LOW); // shut inverter OFF
+  digitalWrite(RED_LED_LIGHTS, LOW); // shut red lights OFF
   digitalWrite(RELAY_DROPSTOP, LOW); // turn off
   delay(5000);  // power will disappear by now unless we're connected to USB
   // the next lines only run if we're connected to USB and power didn't disappear
