@@ -408,7 +408,6 @@ void attemptShutdown() {
   // the next lines only run if we're connected to USB and power didn't disappear
   digitalWrite(RELAY_DROPSTOP, HIGH); // if we're still on might as well own it
   // also the above line prevents a situation where charging continues and we don't want the diode taking all the current
-  while(digitalRead(BUTTONRIGHT)); // wait until unless right button is pressed
 }
 
 union float_and_byte { // https://www.tutorialspoint.com/cprogramming/c_unions
