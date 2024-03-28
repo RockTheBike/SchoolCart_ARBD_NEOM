@@ -28,7 +28,7 @@
 #define RELAY_INVERTERON 3 // this relay turns on the inverter by its own power switch
 #define RELAY_DROPSTOP   4 // this relay connects this arbduino to the battery power
 
-#define VOLTCOEFF       13.13   // convert ADC value to voltage
+#define VOLTCOEFF       13.233   // convert ADC value to voltage
 #define AMPS_IN_COEFF   11.94   // PLUSOUT = OUTPUT, PLUSRAIL = PEDAL INPUT
 #define AMPS_IN_OFFSET 124.5   // when current sensor is at 0 amps this is the ADC value
 #define AMPS_OUT_COEFF  11.97   // PLUSOUT = OUTPUT, PLUSRAIL = PEDAL INPUT
