@@ -46,6 +46,7 @@
 #define MATRIX_WIDTH    18      // matrix width
 #define STRIP_COUNT     60      // how many LEDs
 #define WATTHOURS_EEPROM_ADDRESS 20
+#define ENERGY_PEDAL_EEPROM_ADDRESS 30
 
 Adafruit_NeoMatrix matrix(MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX01_PIN,  NEO_MATRIX_BOTTOM + NEO_MATRIX_RIGHT + NEO_MATRIX_COLUMNS + NEO_MATRIX_ZIGZAG, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel pedalometer(STRIP_COUNT, PEDALOMETER_PIN, NEO_GRB + NEO_KHZ800);
@@ -95,7 +96,7 @@ void setup() {
   pedalometer.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   pedalometer.show();            // Turn OFF all pixels ASAP
   pedalometer.setBrightness(BRIGHTNESS); // Set BRIGHTNESS to about 1/5 (max = 255)
-  load_energy_balance(); // load energy_balance from EEPROM
+  load_eeprom(); // load energy_balance and energy_pedal from EEPROM
   lastGetAnalogs = millis(); // initialize integrator timer before first getAnalogs() call
 }
 
@@ -151,7 +152,7 @@ void energyBankingModeLoop() {
     if (Serial.read() == 'e') {
       uint32_t serial_integer = Serial.parseInt();
       energy_balance = serial_integer * 3600000; // set the number of watt-hours
-      store_energy_balance();
+      store_eeprom();
     } else {
       while (Serial.available()) Serial.read(); // flush serial buffer
     }
@@ -171,7 +172,7 @@ void energyBankingModeLoop() {
       if (! digitalRead(BUTTONLEFT)) {
         disNeostring(MATRIX01_PIN,"RST", LED_WHITE_HIGH);
         disNeostring(MATRIX02_PIN,"RST", LED_WHITE_HIGH);
-        reset_energy_balance();
+        reset_eeprom();
       }
     } else { //Show watts_pedal() and energy_pedal on main signs.
       disNeostring(MATRIX01_PIN,intAlignRigiht(watts_pedal()), LED_WHITE_HIGH);
@@ -375,7 +376,7 @@ void doProtectionRelay() {
   if (voltage < VOLTAGE_UNPROTECT) { digitalWrite(RELAY_OVERPEDAL, LOW); } // don't disconnect pedallers
   if ((voltage < VOLTAGE_SHUTDOWN) && (watts_pedal() < IDLE_THRESHOLD_PEDAL_WATTS)) {
     Serial.println("Shutdown due to undervoltage");
-    reset_energy_balance();
+    reset_eeprom();
     attemptShutdown();
   }
 }
@@ -400,7 +401,7 @@ void attemptShutdown() {
   if (switchInUtilityMode() == false) {
     int ebsoc = ( energy_balance / 3600000 ) / 10; // calculate percentage
     Serial.println("Setting energy_balance to "+String(ebsoc)+"% and storing to EEPROM...");
-    store_energy_balance(); // save our present energy bank account
+    store_eeprom(); // save our present energy_balance and energy_pedal bank account
   }
   disNeostring(MATRIX01_PIN,"OFF", LED_WHITE_HIGH);
   disNeostring(MATRIX02_PIN,"OFF", LED_WHITE_HIGH);
@@ -418,13 +419,16 @@ union float_and_byte { // https://www.tutorialspoint.com/cprogramming/c_unions
   unsigned char bs[sizeof(float)]; // accessed as fab.bs
 } fab; // a union is multiple vars taking up the same memory location
 
-void store_energy_balance() {
+void store_eeprom() {
   fab.f = energy_balance;
   for( int i=0; i<sizeof(float); i++ )
     EEPROM.write( WATTHOURS_EEPROM_ADDRESS+i, fab.bs[i] );
+  fab.f = energy_pedal;
+  for( int i=0; i<sizeof(float); i++ )
+    EEPROM.write( ENERGY_PEDAL_EEPROM_ADDRESS+i, fab.bs[i] );
 }
 
-void load_energy_balance() {
+void load_eeprom() {
   Serial.print( "Loading watthours bytes 0x" );
   bool blank = true;
   for( int i=0; i<sizeof(float); i++ ) {
@@ -434,9 +438,19 @@ void load_energy_balance() {
   }
   energy_balance = blank ? 0 : fab.f;
   Serial.println( ", so energy_balance is "+String(energy_balance));
+
+  Serial.print( "Loading energy_pedal bytes 0x" );
+  blank = true;
+  for( int i=0; i<sizeof(float); i++ ) {
+    fab.bs[i] = EEPROM.read( ENERGY_PEDAL_EEPROM_ADDRESS+i );
+    Serial.print( fab.bs[i], HEX );
+    if( blank && fab.bs[i] != 0xff )  blank = false;
+  }
+  energy_pedal = blank ? 0 : fab.f;
+  Serial.println( ", so energy_pedal is "+String(energy_pedal));
 }
 
-void reset_energy_balance() {
+void reset_eeprom() {
 /* call estimateStateOfCharge() to see if energyBankBalance needs to be higher than 0 at start.
    If battery state of charge is higher than 66% then adjust initial bank account according to the following table.
    As a function, for every percent higher than 66, multiply that difference by 3.
@@ -447,7 +461,7 @@ void reset_energy_balance() {
   energy_balance = ( 3600000000 * ebsoc ) / 100 ;
   energy_pedal = 0;    // reset these too
   energy_inverter = 0; // reset these too
-  Serial.println("Setting energy_balance to "+String(ebsoc)+"% and storing to EEPROM...");
-  store_energy_balance();
+  Serial.println("Setting energy_balance to "+String(ebsoc)+"% and energy_pedal to 0 and storing to EEPROM...");
+  store_eeprom();
   delay(1000); // otherwise it resets a million times each press
 }
