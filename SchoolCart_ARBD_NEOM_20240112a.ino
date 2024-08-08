@@ -5,11 +5,11 @@
 #define VOLTAGE_PROTECT   29.2 // if voltage > 29.2 open relay
 #define VOLTAGE_UNPROTECT 27.2 // if relay has been opened and  voltage is <=27.2, close relay
 #define VOLTAGE_SHUTDOWN  20.0 // if relay has been opened and  voltage is <=27.2, close relay
-#define HYSTERESIS_WATTS        25 // how many watts above inverter consumption is considered gaining
+#define HYSTERESIS_WATTS        20 // how many watts above inverter consumption is considered gaining
 #define TIMEOUT_UTILITYMODE     (15*60000) // 15 minutes NOTE: 1*60*1000 DOESNT WORK RIGHT
 #define TIMEOUT_ENERGYBANKING   (15*60000) // 15 minutes       results in "-5536" not 60000
-#define IDLE_THRESHOLD_PEDAL_WATTS      25 // below this wattage input is considered idle
-#define IDLE_THRESHOLD_INVERTER_WATTS   25 // below this wattage output is considered idle
+#define IDLE_THRESHOLD_PEDAL_WATTS      15 // below this wattage input is considered idle
+#define IDLE_THRESHOLD_INVERTER_WATTS   36 // below this wattage output is considered idle
 #define RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS 500 // inverter wattage at which LEDs are at full brightness
 #define RED_LIGHTS_WATTAGE_BLINKING        1200 // inverter wattage at which LEDs are BLINKING
 
