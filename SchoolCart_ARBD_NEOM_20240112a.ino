@@ -10,7 +10,7 @@
 #define TIMEOUT_ENERGYBANKING   (15*60000) // 15 minutes       results in "-5536" not 60000
 #define TIME_IDLE_ENERGYMODE    5000    // five seconds, see note above if changing this
 #define IDLE_THRESHOLD_PEDAL_WATTS      15 // below this wattage input is considered idle
-#define IDLE_THRESHOLD_INVERTER_WATTS   36 // below this wattage output is considered idle
+#define IDLE_THRESHOLD_INVERTER_WATTS   37 // below this wattage output is considered idle
 #define RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS 500 // inverter wattage at which LEDs are at full brightness
 #define RED_LIGHTS_WATTAGE_BLINKING        1200 // inverter wattage at which LEDs are BLINKING
 
@@ -184,24 +184,23 @@ void energyBankingModeLoop() {
     } else if (energy_balance == 0) {
       digitalWrite(RELAY_INVERTERON, LOW); // shut inverter OFF
     }
-    //uint32_t energy_balance = (millis()*250000UL) % 3690000000UL; // TODO: this is for testing only
-    //uint32_t energy_balance = 3600000000UL/2; // TODO: this is for testing only
-    if ((watts_pedal() >  (watts_inverter() + HYSTERESIS_WATTS) ) && ( trend != 1)) { // determine animation pattern on pedalometer
+
+// determine animation pattern on pedalometer
+    if ((watts_pedal() > (watts_inverter_load() + 15))   && ( trend != 1)) {
       trend = 1; // increasing energy aka winning
       animation_start_time = millis();
     }
-    if (watts_pedal() < (watts_inverter() - IDLE_THRESHOLD_INVERTER_WATTS) ) {
-      if ( trend != -1) {
-        trend = -1; // decreasing energy aka losing
-        animation_start_time = millis();
-      }
-    } else if ((watts_pedal() <= (watts_inverter() + HYSTERESIS_WATTS) ) && ( trend != 0)) {
+    if ((watts_pedal() < (watts_inverter_load() - 15))   && ( trend != -1)) {
+      trend = -1; // decreasing energy aka losing
+      animation_start_time = millis();
+    }
+    if ((abs(watts_pedal() - watts_inverter_load()) < 5) && ( trend != 0)) {
       trend = 0; // no animation on pedalometer
       animation_start_time = millis();
     }
-    //trend = millis() % 9000 / 3000 - 1; // TODO: for testing
+
     energyBankPedalometer(energy_balance/(    3600000000UL/59UL), trend); // 59 is max pedalometer, 60*60*1000000 is 1kwh
-  }
+  } // updating neopixels
   if ((watts_pedal() > IDLE_THRESHOLD_PEDAL_WATTS) || (watts_inverter() > IDLE_THRESHOLD_INVERTER_WATTS)) {
     lastInteractionTime = millis(); // update idle detector
   }
@@ -334,12 +333,11 @@ void getAnalogs() {
   current_inverter = average(inverter_amps1_calc + inverter_amps2_calc, current_inverter);
 
   energy_pedal    += watts_pedal()    * integrationTime;
-  energy_inverter += watts_inverter() * integrationTime;
+  energy_inverter += watts_inverter_load() * integrationTime;
 
   energy_balance  += watts_pedal()    * integrationTime; // adjust energy_balance
-  if (watts_inverter() > IDLE_THRESHOLD_INVERTER_WATTS) { // don't subtract idle wattage of inverter if nothing is plugged in
-    energy_balance  -= watts_inverter() * integrationTime; // adjust energy_balance
-  }
+  energy_balance  -= watts_inverter_load() * integrationTime; // adjust energy_balance
+
   if ((energy_balance > 3600000000 ) && (energy_balance < 3960000000)) { // we went past 1000 (from 999)
     energy_balance = 3600000000 ; // don't let it go over 1000, we don't do that
   } // uint32_t maxes out at 1193 * 3600000
@@ -351,6 +349,8 @@ void getAnalogs() {
 float watts_pedal() { return voltage * current_pedal; }
 
 float watts_inverter() { return voltage * current_inverter; }
+
+float watts_inverter_load() { return constrain((voltage * current_inverter) - IDLE_THRESHOLD_INVERTER_WATTS, 0, 20000); }
 
 float average(float val, float avg) {
   if (avg == 0) avg = val;
@@ -398,7 +398,7 @@ void doProtectionRelay() {
 void doInverterLeds() {
   static int led_brightness = 0;
   if (digitalRead(RELAY_INVERTERON)) {
-    int new_led_brightness = constrain((watts_inverter() - IDLE_THRESHOLD_INVERTER_WATTS) * 255 / RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS, 0, 255); // subtract IDLE_THRESHOLD_INVERTER_WATTS to compensate for phantom power.
+    int new_led_brightness = constrain(watts_inverter_load() * 255 / RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS, 0, 255); // subtract IDLE_THRESHOLD_INVERTER_WATTS to compensate for phantom power.
     if (led_brightness != new_led_brightness) { // only update if led_brightness it has changed
       analogWrite(RED_LED_LIGHTS, new_led_brightness);
       led_brightness = new_led_brightness;
