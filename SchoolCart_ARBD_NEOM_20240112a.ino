@@ -386,7 +386,7 @@ void doProtectionRelay() {
 void doInverterLeds() {
   static int led_brightness = 0;
   if (digitalRead(RELAY_INVERTERON)) {
-    int new_led_brightness = constrain(watts_inverter() * 255 / RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS, 0, 255);
+    int new_led_brightness = constrain((watts_inverter() - IDLE_THRESHOLD_INVERTER_WATTS) * 255 / RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS, 0, 255); // subtract IDLE_THRESHOLD_INVERTER_WATTS to compensate for phantom power.
     if (led_brightness != new_led_brightness) { // only update if led_brightness it has changed
       analogWrite(RED_LED_LIGHTS, new_led_brightness);
       led_brightness = new_led_brightness;
