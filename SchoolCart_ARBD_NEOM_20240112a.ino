@@ -186,16 +186,16 @@ void energyBankingModeLoop() {
     //uint32_t energy_balance = (millis()*250000UL) % 3690000000UL; // TODO: this is for testing only
     //uint32_t energy_balance = 3600000000UL/2; // TODO: this is for testing only
     if ((watts_pedal() >  (watts_inverter() + HYSTERESIS_WATTS) ) && ( trend != 1)) { // determine animation pattern on pedalometer
-      trend = 1;
+      trend = 1; // increasing energy aka winning
       animation_start_time = millis();
     }
-    if (watts_pedal() < watts_inverter() ) {
+    if (watts_pedal() < (watts_inverter() - IDLE_THRESHOLD_INVERTER_WATTS) ) {
       if ( trend != -1) {
-        trend = -1;
+        trend = -1; // decreasing energy aka losing
         animation_start_time = millis();
       }
     } else if ((watts_pedal() <= (watts_inverter() + HYSTERESIS_WATTS) ) && ( trend != 0)) {
-      trend = 0;
+      trend = 0; // no animation on pedalometer
       animation_start_time = millis();
     }
     //trend = millis() % 9000 / 3000 - 1; // TODO: for testing
