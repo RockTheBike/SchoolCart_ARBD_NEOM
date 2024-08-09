@@ -8,6 +8,7 @@
 #define HYSTERESIS_WATTS        20 // how many watts above inverter consumption is considered gaining
 #define TIMEOUT_UTILITYMODE     (15*60000) // 15 minutes NOTE: 1*60*1000 DOESNT WORK RIGHT
 #define TIMEOUT_ENERGYBANKING   (15*60000) // 15 minutes       results in "-5536" not 60000
+#define TIME_IDLE_ENERGYMODE    5000    // five seconds, see note above if changing this
 #define IDLE_THRESHOLD_PEDAL_WATTS      15 // below this wattage input is considered idle
 #define IDLE_THRESHOLD_INVERTER_WATTS   36 // below this wattage output is considered idle
 #define RED_LIGHTS_WATTAGE_FULL_BRIGHTNESS 500 // inverter wattage at which LEDs are at full brightness
@@ -240,6 +241,13 @@ void energyBankPedalometer(int pixlevel, int trend) {
     if (animationtime > 750)                         pedalometer.setPixelColor(pixlevel - 3, pedalometer.Color(255,0,0)); // red
     if (animationtime > 500 && animationtime <= 750) pedalometer.setPixelColor(pixlevel - 2, pedalometer.Color(255,0,0)); // red
     if (animationtime > 250 && animationtime <= 500) pedalometer.setPixelColor(pixlevel - 1, pedalometer.Color(255,0,0)); // red
+  }
+
+  if (lastInteractionTime > TIME_IDLE_ENERGYMODE) { // override everything with the dim static pedalometer
+    for(int i=0; i<pedalometer.numPixels(); i++) { // For each pixel in strip...
+      if (i <= pixlevel) {pedalometer.setPixelColor(i, pedalometer.Color(0,30,0));} // dim green
+      else {pedalometer.setPixelColor(i, 0);}         //  Set pixel's color to black
+    }
   }
   pedalometer.show();
 }
