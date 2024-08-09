@@ -41,7 +41,7 @@
 #define INVERTER_AMPS2_OFFSET 120.5
 
 #define INTERVAL_PRINT  6000    // time between printInfo() events
-#define INTERVAL_NEOPIXELS 250  // time between neopixel update events WHICH CORRUPTS millis()
+#define INTERVAL_NEOPIXELS 166  // time between neopixel update events WHICH CORRUPTS millis()
 #define BRIGHTNESS      20
 #define MATRIX_HEIGHT   8       // matrix height
 #define MATRIX_WIDTH    18      // matrix width
@@ -228,9 +228,11 @@ void energyBankPedalometer(int pixlevel, int trend) {
   }
   int animationtime = (millis() - animation_start_time) % 1000; // animation sequence counter
   if (trend == 1) { // upward animation
-    if (animationtime > 750)                         pedalometer.setPixelColor(pixlevel + 3, pedalometer.Color(0,255,0));
-    if (animationtime > 500 && animationtime <= 750) pedalometer.setPixelColor(pixlevel + 2, pedalometer.Color(0,255,0));
-    if (animationtime > 250 && animationtime <= 500) pedalometer.setPixelColor(pixlevel + 1, pedalometer.Color(0,255,0));
+    if (animationtime > (166 * 5) )                              pedalometer.setPixelColor(pixlevel + 5, pedalometer.Color(0,255,0));
+    if (animationtime > (166 * 4) && animationtime <= (166 * 5)) pedalometer.setPixelColor(pixlevel + 4, pedalometer.Color(0,255,0));
+    if (animationtime > (166 * 3) && animationtime <= (166 * 4)) pedalometer.setPixelColor(pixlevel + 3, pedalometer.Color(0,255,0));
+    if (animationtime > (166 * 2) && animationtime <= (166 * 3)) pedalometer.setPixelColor(pixlevel + 2, pedalometer.Color(0,255,0));
+    if (animationtime > (166 * 1) && animationtime <= (166 * 2)) pedalometer.setPixelColor(pixlevel + 1, pedalometer.Color(0,255,0));
   }
   if (trend == 0) { // in-place animation
     if (animationtime > 750)                         pedalometer.setPixelColor(pixlevel, pedalometer.Color(0,170,0)); // two-thirds-bright
@@ -238,9 +240,11 @@ void energyBankPedalometer(int pixlevel, int trend) {
     if (animationtime > 250 && animationtime <= 500) pedalometer.setPixelColor(pixlevel, pedalometer.Color(0,0,0));
   }
   if (trend == -1) { // downward animation in red
-    if (animationtime > 750)                         pedalometer.setPixelColor(pixlevel - 3, pedalometer.Color(255,0,0)); // red
-    if (animationtime > 500 && animationtime <= 750) pedalometer.setPixelColor(pixlevel - 2, pedalometer.Color(255,0,0)); // red
-    if (animationtime > 250 && animationtime <= 500) pedalometer.setPixelColor(pixlevel - 1, pedalometer.Color(255,0,0)); // red
+    if (animationtime > (166 * 5) )                              pedalometer.setPixelColor(pixlevel - 5, pedalometer.Color(255,0,0));
+    if (animationtime > (166 * 4) && animationtime <= (166 * 5)) pedalometer.setPixelColor(pixlevel - 4, pedalometer.Color(255,0,0));
+    if (animationtime > (166 * 3) && animationtime <= (166 * 4)) pedalometer.setPixelColor(pixlevel - 3, pedalometer.Color(255,0,0));
+    if (animationtime > (166 * 2) && animationtime <= (166 * 3)) pedalometer.setPixelColor(pixlevel - 2, pedalometer.Color(255,0,0));
+    if (animationtime > (166 * 1) && animationtime <= (166 * 2)) pedalometer.setPixelColor(pixlevel - 1, pedalometer.Color(255,0,0));
   }
 
   if (lastInteractionTime > TIME_IDLE_ENERGYMODE) { // override everything with the dim static pedalometer
