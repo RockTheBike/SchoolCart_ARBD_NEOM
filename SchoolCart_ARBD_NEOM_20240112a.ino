@@ -325,7 +325,9 @@ void getAnalogs() {
   energy_inverter += watts_inverter() * integrationTime;
 
   energy_balance  += watts_pedal()    * integrationTime; // adjust energy_balance
-  energy_balance  -= watts_inverter() * integrationTime; // adjust energy_balance
+  if (watts_inverter() > IDLE_THRESHOLD_INVERTER_WATTS) { // don't subtract idle wattage of inverter if nothing is plugged in
+    energy_balance  -= watts_inverter() * integrationTime; // adjust energy_balance
+  }
   if ((energy_balance > 3600000000 ) && (energy_balance < 3960000000)) { // we went past 1000 (from 999)
     energy_balance = 3600000000 ; // don't let it go over 1000, we don't do that
   } // uint32_t maxes out at 1193 * 3600000
