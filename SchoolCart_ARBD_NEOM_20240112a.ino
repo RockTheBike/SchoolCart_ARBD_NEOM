@@ -246,7 +246,7 @@ void energyBankPedalometer(int pixlevel, int trend) {
     if (animationtime > (166 * 1) && animationtime <= (166 * 2)) pedalometer.setPixelColor(pixlevel - 1, pedalometer.Color(255,0,0));
   }
 
-  if (lastInteractionTime > TIME_IDLE_ENERGYMODE) { // override everything with the dim static pedalometer
+  if (millis() - lastInteractionTime > TIME_IDLE_ENERGYMODE) { // override everything with the dim static pedalometer
     for(int i=0; i<pedalometer.numPixels(); i++) { // For each pixel in strip...
       if (i <= pixlevel) {pedalometer.setPixelColor(i, pedalometer.Color(0,30,0));} // dim green
       else {pedalometer.setPixelColor(i, 0);}         //  Set pixel's color to black
